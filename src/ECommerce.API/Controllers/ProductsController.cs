@@ -1,103 +1,62 @@
-using ECommerce.API.DTOs;
-using ECommerce.DAL.Context;
-using ECommerce.DAL.Entities;
+﻿using ECommerce.Application.DTOs;
+using ECommerce.Application.Interfaces;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
-namespace ECommerce.API.Controllers;
-
-[ApiController]
-[Route("api/[controller]")]
-public class ProductsController : ControllerBase
+namespace ECommerce.API.Controllers
 {
-    private readonly AppDbContext _context;
-
-    public ProductsController(AppDbContext context)
+    [Route("api/[controller]")]
+    [ApiController]
+    public class ProductsController : ControllerBase
     {
-        _context = context;
-    }
+        private readonly IProductServices _productServices;
 
-    [HttpGet]
-    public async Task<ActionResult<List<Product>>> GetAll()
-    {
-        var products = await _context.Products.ToListAsync();
-        return Ok(products);
-    }
-
-    [HttpGet("{id}")]
-    public async Task<ActionResult<Product>> GetById(int id)
-    {
-        var product = await _context.Products.FindAsync(id);
-        if (product == null) 
-            return NotFound($"Product with ID {id} not found.");
-            
-        return Ok(product);
-    }
-
-    [HttpPost]
-    public async Task<ActionResult<Product>> Create([FromBody] CreateProductDto dto)
-    {
-        if (dto.Price <= 0)
+        public ProductsController(IProductServices productServices)
         {
-            return BadRequest("Product price must be greater than zero.");
+            _productServices = productServices;
         }
 
-        if (dto.StockQuantity < 0)
+        [HttpGet]
+        public async Task<ActionResult> GetAll()
         {
-            return BadRequest("Stock quantity cannot be negative.");
+            var result = await _productServices.GetAllProductAsync();
+
+            return StatusCode((int)result.StatusCode, result);
         }
 
-        var skuExists = await _context.Products.AnyAsync(p => p.SKU.ToLower() == dto.SKU.ToLower());
-        if (skuExists)
+        [HttpGet("{id}")]
+        public async Task<ActionResult> GetById(int id)
         {
-            return BadRequest($"Product with SKU '{dto.SKU}' already exists.");
+            var result = await _productServices.GetProductByIdAsync(id);
+
+            return StatusCode((int)result.StatusCode, result);
         }
 
-        var product = new Product
+        [HttpPost]
+        public async Task<ActionResult> Create([FromBody] CreateProductDto dto)
         {
-            Name = dto.Name,
-            SKU = dto.SKU.ToUpper(),
-            Price = dto.Price,
-            StockQuantity = dto.StockQuantity
-        };
+            var result = await _productServices.CreateProductAsync(dto);
 
-        await _context.Products.AddAsync(product);
-        await _context.SaveChangesAsync();
+            return StatusCode((int)result.StatusCode, result);
+        }
 
-        return CreatedAtAction(nameof(GetById), new { id = product.Id }, product);
-    }
+        [HttpPut("{id}")]
+        public async Task<ActionResult> Update(
+            int id,
+            [FromBody] UpdateProductDTO dto)
+        {
+            var result = await _productServices.UpdateProductAsync(id, dto);
 
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromBody] Product product)
-    {
-        var existing = await _context.Products.FindAsync(id);
-        if (existing == null) 
-            return NotFound($"Product with ID {id} not found.");
+            return StatusCode((int)result.StatusCode, result);
+        }
 
-        if (product.Price <= 0)
-            return BadRequest("Price must be positive.");
+        [HttpDelete("{id}")]
+        public async Task<ActionResult> Delete(int id)
+        {
+            var result = await _productServices.DeletProductAsync(id);
 
-        existing.Name = product.Name;
-        existing.SKU = product.SKU;
-        existing.Price = product.Price;
-        existing.StockQuantity = product.StockQuantity;
-
-        _context.Products.Update(existing);
-        await _context.SaveChangesAsync();
-
-        return NoContent();
-    }
-
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
-    {
-        var product = await _context.Products.FindAsync(id);
-        if (product == null) 
-            return NotFound($"Product with ID {id} not found.");
-
-        _context.Products.Remove(product);
-        await _context.SaveChangesAsync();
-
-        return NoContent();
+            return StatusCode((int)result.StatusCode, result);
+        }
     }
 }
+
