@@ -1,8 +1,10 @@
 using ECommerce.Application.DTOs;
 using ECommerce.Application.Interfaces;
-using ECommerce.DAL.Context;
+using ECommerce.Core.Features.Customers.Commends.Models;
+using ECommerce.Core.Features.Customers.Coomends.Models;
+using ECommerce.Core.Features.Customers.Queries.Models;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace ECommerce.API.Controllers;
 
@@ -10,35 +12,39 @@ namespace ECommerce.API.Controllers;
 [Route("api/[controller]")]
 public class CustomersController : ControllerBase
 {
-    private readonly ICustomerServices _customerServices;
+    private readonly IMediator _mediator;
 
-    public CustomersController(ICustomerServices customerServices)
+    public CustomersController(IMediator mediator)
     {
-        _customerServices = customerServices;
-    }
-
-    [HttpGet("{id}")]
-    public async Task<ActionResult> GetById(int id)
-    {
-        var customer = await _customerServices.GetCustomerByIdAsync(id);
-
-        return StatusCode((int)customer.StatusCode, customer);
+        _mediator = mediator;
     }
 
     [HttpPost]
-    public async Task<ActionResult> Create([FromBody] CreateCustomerDto dto)
+    public async Task<IActionResult> CreateCustomer(
+        [FromBody] CreateCustomerCommend request)
     {
+        var response = await _mediator.Send(request);
 
-        var result = await _customerServices.CreateCustomerAsync(dto);
-        return StatusCode((int)result.StatusCode, result);
+        return Ok(response);
     }
 
-    [HttpPost("{id}/upgrade-vip")]
+    [HttpPut("{id}/upgrade-vip")]
     public async Task<IActionResult> UpgradeToVip(int id)
     {
-        var result = await _customerServices.UpgradeToVipAsync(id);
+        var request = new UpgradeToVipCommend(id);
 
+        var response = await _mediator.Send(request);
 
-        return StatusCode((int)result.StatusCode, result);
+        return Ok(response);
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetCustomerById(int id)
+    {
+        var request = new GetCustomerByIdQuery(id);
+
+        var response = await _mediator.Send(request);
+
+        return Ok(response);
     }
 }

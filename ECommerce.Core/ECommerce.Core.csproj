@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="Features\Mapping\" />
+	  <PackageReference Include="AutoMapper" Version="16.2.0" />
+	  <PackageReference Include="AWSSDK.Core" Version="4.0.101" />
+	  <PackageReference Include="MediatR" Version="14.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ECommerc.Application\ECommerce.Application.csproj" />
+  </ItemGroup>
+
+</Project>

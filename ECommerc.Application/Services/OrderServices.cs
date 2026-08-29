@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
-using ECommerce.Application.Bases;
-using ECommerce.Application.DTOs;
+using ECommerce.Application.DTO.Orders;
 using ECommerce.Application.Interfaces;
 using ECommerce.Domain.Entities;
 using ECommerce.Domain.Enums;
@@ -12,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace ECommerce.Application.Services
 {
-    public class OrderServices : ResponseFactory, IOrderServices
+    public class OrderServices :  IOrderServices
     {
         private readonly IOrderRepository _orderRepository;
         private readonly IMapper _mapper;
@@ -28,36 +27,35 @@ namespace ECommerce.Application.Services
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<Response<GetOrderByIdDTO>> GetOrderByIdAsync(int id)
+        public async Task<Order> GetOrderByIdAsync(int id)
         {
             var order = await _orderRepository.GetOrderByIdAsync(id);
 
             if (order == null)
-                return NotFound<GetOrderByIdDTO>(
-                    $"Order with ID {id} not found.");
+            { 
+                return null; 
+            }
 
-            var response = _mapper.Map<GetOrderByIdDTO>(order);
 
-            return Success(response);
+            return order;
         }
 
-        public async Task<Response<List<OrderResponseDto>>> GetCustomerOrdersAsync(int customerId)
+        public async Task<List<Order>> GetCustomerOrdersAsync(int customerId)
         {
             var orders = await _orderRepository.GetCustomerOrdersAsync(customerId);
 
-            var response = _mapper.Map<List<OrderResponseDto>>(orders);
-
-            return Success(response);
+           
+            return orders;
         }
-        public async Task<Response<string>> CancelOrderAsync(int id)
+        public async Task<string> CancelOrderAsync(int id)
         {
             var order = await _orderRepository.GetOrderForCancellationAsync(id);
 
             if (order == null)
-                return NotFound<string>("Order not found.");
+                return "Order Null";
 
             if (order.Status == OrderStatus.Cancelled)
-                return BadRequest<string>("Order is already cancelled.");
+                return "Order cancelled";
 
             if (order.Status == OrderStatus.Paid)
             {
@@ -76,37 +74,33 @@ namespace ECommerce.Application.Services
 
             await _orderRepository.SaveChangesAsync();
 
-            return Success("Order cancelled successfully.");
+            return "Success";
         }
 
-        public async Task<Response<string>> CheckoutAsync(CreateOrderDto dto)
+        public async Task<string> CheckoutAsync(CreateOrderDto dto)
         {
-            // 1. Validate Order Items
             if (dto.Items == null || !dto.Items.Any())
             {
-                return BadRequest<string>("Cannot checkout an empty order.");
+                return "empty order";
             }
 
-            // 2. Get Customer
             var customer = await _unitOfWork.Customers.GetByIdAsync(dto.CustomerId);
 
             if (customer == null)
-            {
-                return NotFound<string>(
-                    $"Customer with ID {dto.CustomerId} not found.");
+            { 
+                return 
+                    $"Customer not found";
             }
 
             decimal subtotal = 0m;
 
             var orderItems = new List<OrderItem>();
 
-            // 3. Validate Products & Stock
             foreach (var itemDto in dto.Items)
             {
                 if (itemDto.Quantity <= 0)
                 {
-                    return BadRequest<string>(
-                        "Product quantity must be at least 1.");
+                    return "quantity fail";
                 }
 
                 var product = await _unitOfWork.Products
@@ -114,22 +108,16 @@ namespace ECommerce.Application.Services
 
                 if (product == null)
                 {
-                    return NotFound<string>(
-                        $"Product with ID {itemDto.ProductId} not found.");
+                    return "product not found";
                 }
 
                 if (product.StockQuantity < itemDto.Quantity)
                 {
-                    return BadRequest<string>(
-                        $"Insufficient stock for product '{product.Name}'. " +
-                        $"Available: {product.StockQuantity}, " +
-                        $"Requested: {itemDto.Quantity}");
+                    return "Insufficient fail";
                 }
 
-                // Calculate subtotal
                 subtotal += product.Price * itemDto.Quantity;
 
-                // Create OrderItem
                 orderItems.Add(new OrderItem
                 {
                     ProductId = product.Id,
@@ -137,20 +125,16 @@ namespace ECommerce.Application.Services
                     UnitPrice = product.Price
                 });
 
-                // Decrease stock
                 product.StockQuantity -= itemDto.Quantity;
             }
 
-            // 4. Calculate Discount
             decimal discount = 0m;
 
-            // VIP Discount
             if (customer.IsVip)
             {
                 discount += Math.Round(subtotal * 0.15m, 2);
             }
 
-            // Coupon Discount
             if (!string.IsNullOrWhiteSpace(dto.CouponCode))
             {
                 var coupon = await _unitOfWork.Coupons
@@ -158,8 +142,8 @@ namespace ECommerce.Application.Services
 
                 if (coupon == null)
                 {
-                    return BadRequest<string>(
-                        $"Invalid or inactive coupon code '{dto.CouponCode}'.");
+                    return "coupon null";
+                 
                 }
 
                 discount += Math.Round(
@@ -167,13 +151,11 @@ namespace ECommerce.Application.Services
                     2);
             }
 
-            // Discount cannot exceed subtotal
             if (discount > subtotal)
             {
                 discount = subtotal;
             }
 
-            // 5. Calculate Amounts
             var netAmount = subtotal - discount;
 
             var tax = Math.Round(netAmount * 0.14m, 2);
@@ -184,18 +166,15 @@ namespace ECommerce.Application.Services
 
             var finalTotal = netAmount + tax + shipping;
 
-            // 6. Check Payment Limit
             if (finalTotal > 50000m)
             {
-                return BadRequest<string>(
-                    "Payment processing failed. Amount exceeds limit.");
+                return "Payment processing failed";
+              
             }
 
-            // 7. Generate Transaction Reference
             var txRef =
                 $"TX-LEGACY-{Guid.NewGuid().ToString()[..8].ToUpper()}";
 
-            // 8. Create Order
             var order = new Order
             {
                 CustomerId = customer.Id,
@@ -211,7 +190,6 @@ namespace ECommerce.Application.Services
                 Items = orderItems
             };
 
-            // 9. Create Payment
             var payment = new Payment
             {
                 Order = order,
@@ -221,7 +199,6 @@ namespace ECommerce.Application.Services
                 IsSuccess = true
             };
 
-            // 10. Transaction
             try
             {
                 await _unitOfWork.BeginTransactionAsync();
@@ -238,16 +215,11 @@ namespace ECommerce.Application.Services
             {
                 await _unitOfWork.RollbackTransactionAsync();
 
-                return InternalServerError<string>(
-                    "An error occurred while saving the order.");
             }
 
-            // 11. Response
-            return Success(
-                $"Order created successfully. " +
-                $"Order ID: {order.Id}, " +
-                $"Total: {order.TotalAmount}, " +
-                $"Transaction Reference: {txRef}");
+            return
+                $"Success";
+           
         }
     }
 }

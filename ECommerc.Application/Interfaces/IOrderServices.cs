@@ -1,5 +1,5 @@
-﻿using ECommerce.Application.Bases;
-using ECommerce.Application.DTOs;
+﻿using ECommerce.Application.DTO.Orders;
+using ECommerce.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,9 +10,9 @@ namespace ECommerce.Application.Interfaces
 {
     public interface IOrderServices
     {
-        Task<Response<string>> CancelOrderAsync(int id);
-        Task<Response<GetOrderByIdDTO>> GetOrderByIdAsync(int id);
-        Task<Response<string>> CheckoutAsync(CreateOrderDto dto);
-        Task<Response<List<OrderResponseDto>>> GetCustomerOrdersAsync(int customerId);
+        Task<string> CancelOrderAsync(int id);
+        Task<Order> GetOrderByIdAsync(int id);
+        Task<string> CheckoutAsync(CreateOrderDto dto);
+        Task<List<Order>> GetCustomerOrdersAsync(int customerId);
     }
 }

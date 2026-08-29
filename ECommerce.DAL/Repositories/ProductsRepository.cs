@@ -1,5 +1,4 @@
-﻿using ECommerce.Application.Bases;
-using ECommerce.Application.Interfaces;
+﻿using ECommerce.Application.Interfaces;
 using ECommerce.DAL.Context;
 using ECommerce.Domain.Entities;
 using Microsoft.EntityFrameworkCore;

@@ -1,7 +1,4 @@
-﻿using AutoMapper;
-using ECommerce.Application.Bases;
-using ECommerce.Application.DTOs;
-using ECommerce.Application.Interfaces;
+﻿using ECommerce.Application.Interfaces;
 using ECommerce.Domain.Entities;
 using System;
 using System.Collections.Generic;
@@ -11,67 +8,59 @@ using System.Threading.Tasks;
 
 namespace ECommerce.Application.Services
 {
-    public class CustomerServices : ResponseFactory, ICustomerServices
+    public class CustomerServices :  ICustomerServices
     {
         private readonly ICustomerRepository _customerRepository;
-        private readonly IMapper _mapper;
+       
 
-        public CustomerServices(ICustomerRepository customerRepository, IMapper mapper)
+        public CustomerServices(ICustomerRepository customerRepository)
         {
             this._customerRepository = customerRepository;
-            _mapper = mapper;
+           
         }
 
-        public async Task<Response<string>> CreateCustomerAsync(CreateCustomerDto dto)
+        public async Task<string> CreateCustomerAsync(Customer customer)
         {
-            if (string.IsNullOrWhiteSpace(dto.FullName))
-                return BadRequest<string>("Full name is required.");
+            
 
-            if (string.IsNullOrWhiteSpace(dto.Email) || !dto.Email.Contains("@"))
-                return BadRequest<string>("A valid email address is required.");
-
-            var emailExists = await _customerRepository.EmailExists(dto.Email);
+            var emailExists = await _customerRepository.EmailExists(customer.Email);
             if (emailExists)
             {
-                return BadRequest<string>("Email is already registered.");
+                return "Email registered";
             }
-            //mapping
-            
-            var customer = _mapper.Map<Customer>(dto);
-
             await _customerRepository.AddAsync(customer);
             await _customerRepository.SaveChangesAsync();
-            return Created("Customer Created Successfuly");
+            return "Success";
         }
 
-        public async Task<Response<GetCustomerByIdDTO>> GetCustomerByIdAsync(int Id)
+        public async Task<Customer?> GetCustomerByIdAsync(int Id)
         {
             var customer = await _customerRepository.GetCustomerByIdAsync(Id);
-            if (customer == null)
-                return NotFound<GetCustomerByIdDTO>($"Customer with ID {Id} not found.");
-            var customermap = _mapper.Map<GetCustomerByIdDTO>(customer);
            
-            return Success(customermap);
+            return customer;
         }
 
-        public async Task<Response<string>> UpgradeToVipAsync(int customerId)
+        public async Task<string> UpgradeToVipAsync(int customerId)
         {
-            var customer = await _customerRepository.GetCustomerByIdAsync(customerId);
 
+            var customer = await _customerRepository.GetByIdAsync(customerId);
             if (customer == null)
-                return NotFound<string>("Customer not found.");
+            {
+                return "Customer Null";
 
+            }
             var totalSpent =
                 await _customerRepository.GetTotalSpentByCustomerIdAsync(customerId);
+        
 
             if (totalSpent < 500m)
-                return BadRequest<string>("Customer does not qualify for VIP.");
+                return "totalSpent less than 500";
 
             customer.IsVip = true;
 
             await _customerRepository.SaveChangesAsync();
 
-            return Success("Customer upgraded to VIP successfully.");
+            return "Success";
         }
     }
 }

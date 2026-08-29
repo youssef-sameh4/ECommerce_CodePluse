@@ -1,5 +1,8 @@
 ﻿using ECommerce.Application.DTOs;
 using ECommerce.Application.Interfaces;
+using ECommerce.Core.Features.Orders.Coomends.Models;
+using ECommerce.Core.Features.Orders.Queries.Models;
+using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,41 +12,50 @@ namespace ECommerce.API.Controllers
     [ApiController]
     public class OrdersController : ControllerBase
     {
-        private readonly IOrderServices _orderServices;
+        private readonly IMediator _mediator;
 
-        public OrdersController(IOrderServices orderServices)
+        public OrdersController(IMediator mediator)
         {
-            _orderServices = orderServices;
+            _mediator = mediator;
+        }
+
+        [HttpPost("checkout")]
+        public async Task<IActionResult> Checkout(
+            [FromBody] CheckoutCommend request)
+        {
+            var response = await _mediator.Send(request);
+
+            return Ok(response);
+        }
+
+        [HttpPut("{id}/cancel")]
+        public async Task<IActionResult> CancelOrder(int id)
+        {
+            var request = new CancelOrderCommend(id);
+
+            var response = await _mediator.Send(request);
+
+            return Ok(response);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult> GetOrder(int id)
+        public async Task<IActionResult> GetOrderById(int id)
         {
-            var result = await _orderServices.GetOrderByIdAsync(id);
+            var request = new GetOrderByIdQuery(id);
 
-            return StatusCode((int)result.StatusCode, result);
+            var response = await _mediator.Send(request);
+
+            return Ok(response);
         }
 
         [HttpGet("customer/{customerId}")]
-        public async Task<ActionResult> GetCustomerOrders(int customerId)
+        public async Task<IActionResult> GetCustomerOrders(int customerId)
         {
-            var result = await _orderServices.GetCustomerOrdersAsync(customerId);
+            var request = new GetCustomerOrdersQuery(customerId);
 
-            return StatusCode((int)result.StatusCode, result);
-        }
-        [HttpPost("cancel/{id}")]
-        public async Task<IActionResult> CancelOrder(int id)
-        {
-            var result = await _orderServices.CancelOrderAsync(id);
+            var response = await _mediator.Send(request);
 
-            return StatusCode((int)result.StatusCode, result);
-        }
-        [HttpPost("checkout")]
-        public async Task<IActionResult> Checkout([FromBody] CreateOrderDto dto)
-        {
-            var result = await _orderServices.CheckoutAsync(dto);
-
-            return StatusCode((int)result.StatusCode, result);
+            return Ok(response);
         }
     }
 }

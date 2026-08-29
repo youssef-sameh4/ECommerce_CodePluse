@@ -17,10 +17,16 @@ public class AppDbContext : DbContext
     public DbSet<Coupon> Coupons => Set<Coupon>();
     public DbSet<Payment> Payments => Set<Payment>();
 
+    public DbSet<Cart> Carts => Set<Cart>();
+    public DbSet<CartItem> CartItems => Set<CartItem>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-
+        modelBuilder.Entity<Cart>()
+    .HasOne(c => c.Customer)
+    .WithOne(c => c.Cart)
+    .HasForeignKey<Cart>(c => c.CustomerId);
         modelBuilder.Entity<Product>().HasData(
             new Product { Id = 1, Name = "Mechanical Keyboard", SKU = "TECH-MK-01", Price = 120.00m, StockQuantity = 25 },
             new Product { Id = 2, Name = "Wireless Ergonomic Mouse", SKU = "TECH-WM-02", Price = 45.50m, StockQuantity = 40 },

@@ -1,6 +1,4 @@
 ﻿using AutoMapper;
-using ECommerce.Application.Bases;
-using ECommerce.Application.DTOs;
 using ECommerce.Application.Interfaces;
 using ECommerce.Domain.Entities;
 using System;
@@ -11,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace ECommerce.Application.Services
 {
-    public class ProductServices : ResponseFactory,IProductServices
+    public class ProductServices : IProductServices
     {
         private readonly IProductsRepository _productsRepository;
         private readonly IMapper _mapper;
@@ -21,73 +19,74 @@ namespace ECommerce.Application.Services
             _mapper = mapper;
         }
 
-        public async Task<Response<string>> CreateProductAsync(CreateProductDto dto)
+        public async Task<string> CreateProductAsync(Product product)
         {
-            if (dto.Price <= 0)
+            if (product.Price <= 0)
             {
-                return BadRequest<string>("Product price must be greater than zero.");
+                return "Product price Fail.";
             }
 
-            if (dto.StockQuantity < 0)
+            if (product.StockQuantity < 0)
             {
-                return BadRequest<string>("Stock quantity cannot be negative.");
+                return "Stock quantity fail.";
             }
 
-            var skuExists = await _productsRepository.SkuExistsAsync(dto.SKU);
+            var skuExists = await _productsRepository.SkuExistsAsync(product.SKU);
 
             if (skuExists)
             {
-                return BadRequest<string>("SKU is already registered.");
+                return "SKU fail.";
             }
 
-            var productmap = _mapper.Map<Product>(dto);
+         
 
-            await _productsRepository.AddAsync(productmap);
+            await _productsRepository.AddAsync(product);
             await _productsRepository.SaveChangesAsync();
-            return Created("Product Created Successfuly");
+            return "Success";
         }
 
-        public async Task<Response<string>> DeletProductAsync(int Id)
+        public async Task<string> DeletProductAsync(int Id)
         {
             var product = await _productsRepository.GetByIdAsync(Id);
             if (product == null)
-                return NotFound<string>($"Product with ID {Id} not found.");
-
+                return "Null";
             await _productsRepository.Delete(product);
             await _productsRepository.SaveChangesAsync();
-            return Deleted<string>();
+            return "Success";
         }
 
-        public async Task<Response<List<GetAllProductsDTO>>> GetAllProductAsync()
+        public async Task<List<Product>> GetAllProductAsync()
         {
             var products = await _productsRepository.GetAll();
-            var response = _mapper.Map<List<GetAllProductsDTO>>(products);
-            return Success(response);
+           
+            return products;
         }
 
-        public async Task<Response<GetProductByIdDTO>> GetProductByIdAsync(int Id)
+        public async Task<Product> GetProductByIdAsync(int Id)
         {
             var product = await _productsRepository.GetByIdAsync(Id);
             if (product == null)
-                return NotFound<GetProductByIdDTO>($"Product with ID {Id} not found.");
-            var response = _mapper.Map<GetProductByIdDTO> (product);
-            return Success(response);
+            {
+                return null;
+            }
+            return product;
         }
 
-        public async Task<Response<string>> UpdateProductAsync(int Id,UpdateProductDTO product)
+        public async Task<string> UpdateProductAsync(Product product)
         {
-            var existing = await _productsRepository.GetByIdAsync(Id);
+            var existing = await _productsRepository.GetByIdAsync(product.Id);
             if (existing == null)
-                return NotFound<string>($"Product with ID {Id} not found.");
+                return "Null";
 
             if (product.Price <= 0)
-                return BadRequest<string>("Price must be positive.");
+            {
+                return "Price Fail";
+            }
+          
 
-            _mapper.Map(product, existing);
-
-            var response=_productsRepository.Update(existing);
+            await _productsRepository.Update(existing);
             await _productsRepository.SaveChangesAsync();
-          return  Success("Product Updated");
+          return  "Success";
         }
     }
 }

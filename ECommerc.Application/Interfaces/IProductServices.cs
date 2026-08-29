@@ -1,6 +1,4 @@
 ﻿using AutoMapper.Execution;
-using ECommerce.Application.Bases;
-using ECommerce.Application.DTOs;
 using ECommerce.Domain.Entities;
 using System;
 using System.Collections.Generic;
@@ -12,10 +10,10 @@ namespace ECommerce.Application.Interfaces
 {
     public interface IProductServices
     {
-        Task<Response<List<GetAllProductsDTO>>> GetAllProductAsync();
-        Task<Response<GetProductByIdDTO>> GetProductByIdAsync(int Id);
-        Task<Response<string>> CreateProductAsync(CreateProductDto dto);
-        Task<Response<string>> UpdateProductAsync(int Id, UpdateProductDTO product);
-        Task<Response<string>> DeletProductAsync(int Id);
+        Task<List<Product>> GetAllProductAsync();
+        Task<Product> GetProductByIdAsync(int Id);
+         Task<string> CreateProductAsync(Product product);
+        Task<string> UpdateProductAsync(Product product);
+        Task<string> DeletProductAsync(int Id);
     }
 }

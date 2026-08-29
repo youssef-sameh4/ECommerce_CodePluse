@@ -1,7 +1,9 @@
-using ECommerce.DAL.Context;
-using Microsoft.EntityFrameworkCore;
-using ECommerce.Infrustructur;
 using ECommerce.Application;
+using ECommerce.Core;
+using ECommerce.DAL.Context;
+using ECommerce.Infrustructur;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
@@ -9,19 +11,22 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var connectionString =
+    builder.Configuration.GetConnectionString("DefaultConnection");
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-builder.Services.AddInfrustrctureDependance();
 builder.Services.AddApplicationDependance();
+builder.Services.AddInfrustrctureDependance();
+builder.Services.AddCoreDependance();
 
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
     db.Database.Migrate();
 }
 

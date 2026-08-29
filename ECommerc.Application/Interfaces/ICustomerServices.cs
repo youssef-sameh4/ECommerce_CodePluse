@@ -1,6 +1,4 @@
-﻿using ECommerce.Application.Bases;
-using ECommerce.Application.DTOs;
-using ECommerce.Domain.Entities;
+﻿using ECommerce.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,9 +10,9 @@ namespace ECommerce.Application.Interfaces
     public interface ICustomerServices
     {
        
-        Task<Response<GetCustomerByIdDTO>> GetCustomerByIdAsync(int Id);
-        Task<Response<string>> CreateCustomerAsync(CreateCustomerDto dto);
-        Task<Response<string>> UpgradeToVipAsync(int customerId);
+        Task<Customer?> GetCustomerByIdAsync(int Id);
+        Task<string> CreateCustomerAsync(Customer customer);
+        Task<string> UpgradeToVipAsync(int customerId);
 
     }
 }

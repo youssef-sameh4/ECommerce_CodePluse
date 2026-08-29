@@ -18,5 +18,7 @@ namespace ECommerce.Domain.Entities
         public bool IsVip { get; set; }
 
         public List<Order> Orders { get; set; } = new();
+
+        public Cart? Cart { get; set; }
     }
 }

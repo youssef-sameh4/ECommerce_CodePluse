@@ -1,62 +1,74 @@
 ﻿using ECommerce.Application.DTOs;
 using ECommerce.Application.Interfaces;
+using ECommerce.Core.Features.Products.Coomends.Models;
+using ECommerce.Core.Features.Products.Queries.Models;
+using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ECommerce.API.Controllers
 {
-    [Route("api/[controller]")]
+
     [ApiController]
+    [Route("api/[controller]")]
     public class ProductsController : ControllerBase
     {
-        private readonly IProductServices _productServices;
+        private readonly IMediator _mediator;
 
-        public ProductsController(IProductServices productServices)
+        public ProductsController(IMediator mediator)
         {
-            _productServices = productServices;
-        }
-
-        [HttpGet]
-        public async Task<ActionResult> GetAll()
-        {
-            var result = await _productServices.GetAllProductAsync();
-
-            return StatusCode((int)result.StatusCode, result);
-        }
-
-        [HttpGet("{id}")]
-        public async Task<ActionResult> GetById(int id)
-        {
-            var result = await _productServices.GetProductByIdAsync(id);
-
-            return StatusCode((int)result.StatusCode, result);
+            _mediator = mediator;
         }
 
         [HttpPost]
-        public async Task<ActionResult> Create([FromBody] CreateProductDto dto)
+        public async Task<IActionResult> CreateProduct(
+            [FromBody] CreateProductCommend request)
         {
-            var result = await _productServices.CreateProductAsync(dto);
+            var response = await _mediator.Send(request);
 
-            return StatusCode((int)result.StatusCode, result);
+            return Ok(response);
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult> Update(
+        public async Task<IActionResult> UpdateProduct(
             int id,
-            [FromBody] UpdateProductDTO dto)
+            [FromBody] UpdateProductCommend request)
         {
-            var result = await _productServices.UpdateProductAsync(id, dto);
+            request.Id = id;
 
-            return StatusCode((int)result.StatusCode, result);
+            var response = await _mediator.Send(request);
+
+            return Ok(response);
         }
 
         [HttpDelete("{id}")]
-        public async Task<ActionResult> Delete(int id)
+        public async Task<IActionResult> DeleteProduct(int id)
         {
-            var result = await _productServices.DeletProductAsync(id);
+            var request = new DeleteProductCommend(id);
 
-            return StatusCode((int)result.StatusCode, result);
+            var response = await _mediator.Send(request);
+
+            return Ok(response);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAllProducts()
+        {
+            var request = new GetAllProductsQuery();
+
+            var response = await _mediator.Send(request);
+
+            return Ok(response);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetProductById(int id)
+        {
+            var request = new GetByIdProductQuery(id);
+
+            var response = await _mediator.Send(request);
+
+            return Ok(response);
         }
     }
 }
-
